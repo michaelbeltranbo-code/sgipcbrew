@@ -9,6 +9,7 @@ import {
   startTransfer,
   finishTransfer,
   updateFermenterStatus,
+  productionStatusLabel,
   type FermenterStatus,
 } from "../api/fermenters";
 import { listProductions } from "../api/production";
@@ -365,7 +366,7 @@ export default function FermenterDetail() {
                     <MiniBox label="ID producción" value={String(currentProduction.id)} />
                     <MiniBox label="Cerveza" value={currentProduction.beerName ?? "-"} />
                     <MiniBox label="Cliente" value={currentProduction.client?.name ?? "-"} />
-                    <MiniBox label="Estado" value={currentProduction.status ?? "-"} />
+                    <MiniBox label="Estado" value={productionStatusLabel(currentProduction.status)} />
                     <MiniBox
                       label="Volumen en fermentación"
                       value={`${fermenter.currentVolumeLiters ?? currentProduction.volumeLiters ?? "-"} L`}
@@ -501,7 +502,7 @@ export default function FermenterDetail() {
                     onChange={(e) =>
                       setReadingForm((prev) => ({
                         ...prev,
-                        purgeUnit: e.target.value as "kg" | "l",
+                        purgeUnit: e.target.value as  "l",
                       }))
                     }
                   >
@@ -651,7 +652,7 @@ export default function FermenterDetail() {
                     <option value="">Selecciona un lote</option>
                     {availableProductions.map((p: any) => (
                       <option key={p.id} value={p.id}>
-                        #{p.id} - {p.beerName} - {p.status}
+                        #{p.id} - {p.beerName} - {productionStatusLabel(p.status)}
                       </option>
                     ))}
                   </select>

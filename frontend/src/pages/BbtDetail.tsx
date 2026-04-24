@@ -124,11 +124,15 @@ export default function BbtDetail() {
     kegs60: 0,
     kegs50: 0,
     kegs30: 0,
+    partialLiters: '',
     lossLiters: 0,
     note: '',
   });
 
   const [bottlingNote, setBottlingNote] = useState('');
+  const [showTransfers, setShowTransfers] = useState(false);
+  const [showStatusHistory, setShowStatusHistory] = useState(false);
+  const [showMovements, setShowMovements] = useState(false);
 
   async function loadData() {
     try {
@@ -240,9 +244,10 @@ export default function BbtDetail() {
         Number(kegForm.kegs60 || 0) +
         Number(kegForm.kegs50 || 0) +
         Number(kegForm.kegs30 || 0);
+      const partial = Number(kegForm.partialLiters || 0);
 
-      if (totalKegs <= 0 && Number(kegForm.lossLiters || 0) <= 0) {
-        alert('Debes registrar al menos barriles o merma');
+      if (totalKegs <= 0 && partial <= 0 && Number(kegForm.lossLiters || 0) <= 0) {
+        alert('Debes registrar al menos barriles, litros parciales o merma');
         return;
       }
 
@@ -250,6 +255,7 @@ export default function BbtDetail() {
         kegs60: Number(kegForm.kegs60 || 0),
         kegs50: Number(kegForm.kegs50 || 0),
         kegs30: Number(kegForm.kegs30 || 0),
+        partialLiters: partial > 0 ? partial : undefined,
         lossLiters: Number(kegForm.lossLiters || 0),
         note: kegForm.note || undefined,
       });
@@ -260,6 +266,7 @@ export default function BbtDetail() {
         kegs60: 0,
         kegs50: 0,
         kegs30: 0,
+        partialLiters: '',
         lossLiters: 0,
         note: '',
       });
@@ -290,12 +297,13 @@ export default function BbtDetail() {
     }
   };
 
+  const hasBeer = Number(bbt?.currentVolumeLiters ?? 0) > 0;
+
   const canReceiveBeer =
     bbt?.status === 'DISPONIBLE' || bbt?.status === 'SANITIZADO';
 
   const canPackage =
-    bbt?.status === 'LISTO_PARA_EMPAQUE' &&
-    Number(bbt?.currentVolumeLiters ?? 0) > 0;
+    bbt?.status === 'LISTO_PARA_EMPAQUE' && hasBeer;
 
   const statusMeta = useMemo(() => getStatusMeta(bbt?.status), [bbt?.status]);
 
@@ -493,62 +501,79 @@ export default function BbtDetail() {
           <div>
             <h2 style={sectionTitleStyle}>Estados operativos del BBT</h2>
             <p style={sectionSubtitleStyle}>
-              Cambia el estado del tanque según el momento del proceso.
+              {hasBeer
+                ? 'El tanque tiene cerveza cargada. Solo puedes cambiar a estados de proceso.'
+                : 'El tanque está vacío. Solo puedes cambiar a estados de limpieza o disponibilidad.'}
             </p>
+          </div>
+          <div style={{
+            padding: '6px 14px',
+            borderRadius: 999,
+            fontSize: 12,
+            fontWeight: 800,
+            background: hasBeer ? '#fef3c7' : '#f0fdf4',
+            color: hasBeer ? '#92400e' : '#166534',
+            border: `1px solid ${hasBeer ? '#fcd34d' : '#86efac'}`,
+            whiteSpace: 'nowrap',
+          }}>
+            {hasBeer ? `Con cerveza · ${Number(bbt.currentVolumeLiters).toFixed(1)} L` : 'Vacío'}
           </div>
         </div>
 
-        <div style={statusButtonsGridStyle}>
-          <button
-            onClick={() => handleStatusChange('SUCIO')}
-            style={statusActionButtonStyle}
-            disabled={saving}
-          >
-            SUCIO
-          </button>
-          <button
-            onClick={() => handleStatusChange('LIMPIO')}
-            style={statusActionButtonStyle}
-            disabled={saving}
-          >
-            LIMPIO
-          </button>
-          <button
-            onClick={() => handleStatusChange('SANITIZADO')}
-            style={statusActionButtonStyle}
-            disabled={saving}
-          >
-            SANITIZADO
-          </button>
-          <button
-            onClick={() => handleStatusChange('DISPONIBLE')}
-            style={statusActionButtonStyle}
-            disabled={saving}
-          >
-            DISPONIBLE
-          </button>
-          <button
-            onClick={() => handleStatusChange('EN_MADURACION')}
-            style={statusActionButtonStyle}
-            disabled={saving}
-          >
-            EN MADURACIÓN
-          </button>
-          <button
-            onClick={() => handleStatusChange('EN_CARBONATACION')}
-            style={statusActionButtonStyle}
-            disabled={saving}
-          >
-            EN CARBONATACIÓN
-          </button>
-          <button
-            onClick={() => handleStatusChange('LISTO_PARA_EMPAQUE')}
-            style={statusActionButtonStyle}
-            disabled={saving}
-          >
-            CARBONATADA
-          </button>
-        </div>
+        {!hasBeer && (
+          <div style={statusButtonsGridStyle}>
+            {([
+              { key: 'SUCIO',      label: 'Sucio',      bg: '#fee2e2', color: '#b91c1c', border: '#fca5a5' },
+              { key: 'LIMPIO',     label: 'Limpio',     bg: '#ecfeff', color: '#0f766e', border: '#99f6e4' },
+              { key: 'SANITIZADO', label: 'Sanitizado', bg: '#dbeafe', color: '#1d4ed8', border: '#93c5fd' },
+              { key: 'DISPONIBLE', label: 'Disponible', bg: '#dcfce7', color: '#166534', border: '#86efac' },
+            ] as const).map(({ key, label, bg, color, border }) => (
+              <button
+                key={key}
+                onClick={() => handleStatusChange(key)}
+                disabled={saving || bbt?.status === key}
+                style={{
+                  ...statusActionButtonStyle,
+                  background: bbt?.status === key ? bg : '#fff',
+                  color: bbt?.status === key ? color : '#334155',
+                  borderColor: bbt?.status === key ? border : '#cbd5e1',
+                  borderWidth: bbt?.status === key ? 2 : 1,
+                  opacity: saving ? 0.6 : 1,
+                }}
+              >
+                {bbt?.status === key && <span style={{ marginRight: 6 }}>✓</span>}
+                {label}
+              </button>
+            ))}
+          </div>
+        )}
+
+        {hasBeer && (
+          <div style={statusButtonsGridStyle}>
+            {([
+              { key: 'EN_MADURACION',     label: 'En maduración',    bg: '#fef3c7', color: '#92400e', border: '#fcd34d' },
+              { key: 'EN_CARBONATACION',  label: 'En carbonatación', bg: '#ede9fe', color: '#6d28d9', border: '#c4b5fd' },
+              { key: 'LISTO_PARA_EMPAQUE',label: 'Carbonatada',      bg: '#cffafe', color: '#155e75', border: '#67e8f9' },
+            ] as const).map(({ key, label, bg, color, border }) => (
+              <button
+                key={key}
+                onClick={() => handleStatusChange(key)}
+                disabled={saving || bbt?.status === key}
+                style={{
+                  ...statusActionButtonStyle,
+                  background: bbt?.status === key ? bg : '#fff',
+                  color: bbt?.status === key ? color : '#334155',
+                  borderColor: bbt?.status === key ? border : '#cbd5e1',
+                  borderWidth: bbt?.status === key ? 2 : 1,
+                  opacity: saving ? 0.6 : 1,
+                }}
+              >
+                {bbt?.status === key && <span style={{ marginRight: 6 }}>✓</span>}
+                {label}
+              </button>
+            ))}
+          </div>
+        )}
       </div>
 
       {canPackage && (
@@ -633,6 +658,73 @@ export default function BbtDetail() {
                 </div>
               </div>
 
+              {/* Campo barril parcial */}
+              <div style={{
+                background: '#faf5ff',
+                border: '1px dashed #c4b5fd',
+                borderRadius: 10,
+                padding: 12,
+                marginBottom: 12,
+              }}>
+                <label style={{ ...labelStyle, color: '#6d28d9', display: 'block', marginBottom: 4 }}>
+                  Barril parcial — cantidad exacta (L)
+                </label>
+                <p style={{ margin: '0 0 8px', fontSize: 13, color: '#7c3aed' }}>
+                  Usa este campo si queda cerveza que no alcanza para un barril completo.
+                  Ejemplo: quedan 18 L → escribe 18.
+                </p>
+                <input
+                  type="number"
+                  min="0"
+                  step="0.1"
+                  placeholder="Ej: 18"
+                  value={kegForm.partialLiters}
+                  onChange={(e) =>
+                    setKegForm((prev) => ({ ...prev, partialLiters: e.target.value }))
+                  }
+                  style={{ ...fieldStyle, borderColor: '#c4b5fd', width: '100%', boxSizing: 'border-box' }}
+                />
+              </div>
+
+              {/* Resumen */}
+              {(() => {
+                const litersComplete =
+                  Number(kegForm.kegs60 || 0) * 60 +
+                  Number(kegForm.kegs50 || 0) * 50 +
+                  Number(kegForm.kegs30 || 0) * 30;
+                const partial = Number(kegForm.partialLiters || 0);
+                const loss = Number(kegForm.lossLiters || 0);
+                const total = litersComplete + partial + loss;
+                const available = Number(bbt?.currentVolumeLiters ?? 0);
+                if (total <= 0) return null;
+                return (
+                  <div style={{
+                    background: '#eff6ff',
+                    border: '1px solid #bfdbfe',
+                    borderRadius: 10,
+                    padding: 12,
+                    marginBottom: 12,
+                    fontSize: 14,
+                  }}>
+                    <div style={{ fontWeight: 700, marginBottom: 6 }}>Resumen de esta bajada</div>
+                    {litersComplete > 0 && <div>Barriles completos: <strong>{litersComplete} L</strong></div>}
+                    {partial > 0 && <div>Barril parcial: <strong style={{ color: '#6d28d9' }}>{partial} L</strong></div>}
+                    {loss > 0 && <div>Merma: <strong>{loss} L</strong></div>}
+                    <div style={{ marginTop: 6, fontWeight: 800 }}>
+                      Total que saldrá del BBT:{' '}
+                      <span style={{ color: total > available ? '#dc2626' : '#1d4ed8' }}>
+                        {total.toFixed(1)} L
+                      </span>
+                      {total > available && (
+                        <span style={{ color: '#dc2626', marginLeft: 8, fontWeight: 700 }}>
+                          ⚠ Excede los {available} L disponibles
+                        </span>
+                      )}
+                    </div>
+                  </div>
+                );
+              })()}
+
               <div style={fieldBlockStyle}>
                 <label style={labelStyle}>Nota</label>
                 <input
@@ -675,130 +767,149 @@ export default function BbtDetail() {
         </div>
       )}
 
+      {/* Historial de transferencias — acordeón */}
       <div style={sectionCardStyle}>
-        <div style={sectionHeaderStyle}>
-          <div>
-            <h2 style={sectionTitleStyle}>Historial de transferencias</h2>
-            <p style={sectionSubtitleStyle}>
-              Entradas registradas al BBT desde fermentadores.
-            </p>
-          </div>
-        </div>
+        <button
+          onClick={() => setShowTransfers((v) => !v)}
+          style={accordionButtonStyle}
+        >
+          <span>📋 Historial de transferencias</span>
+          <span style={accordionBadgeStyle}>{bbt.transfers?.length ?? 0}</span>
+          <span style={accordionChevronStyle}>{showTransfers ? '▲' : '▼'}</span>
+        </button>
 
-        {!bbt.transfers?.length ? (
-          <div style={emptyStateStyle}>No hay transferencias registradas.</div>
-        ) : (
-          <div style={tableWrapStyle}>
-            <table style={tableStyle}>
-              <thead>
-                <tr style={theadRowStyle}>
-                  <th style={thStyle}>ID transferencia</th>
-                  <th style={thStyle}>Proceso</th>
-                  <th style={thStyle}>Litros transferidos</th>
-                  <th style={thStyle}>Merma</th>
-                  <th style={thStyle}>Litros netos</th>
-                  <th style={thStyle}>Fecha</th>
-                </tr>
-              </thead>
-              <tbody>
-                {bbt.transfers.map((t: any) => (
-                  <tr key={t.id}>
-                    <td style={tdStyle}>{t.id}</td>
-                    <td style={tdStyle}>{t.processType}</td>
-                    <td style={tdStyle}>{formatLiters(t.litersTransferred)}</td>
-                    <td style={tdStyle}>{formatLiters(t.lossLiters)}</td>
-                    <td style={tdStyle}>{formatLiters(t.litersReceivedInBbt)}</td>
-                    <td style={tdStyle}>{formatDate(t.createdAt)}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
+        {showTransfers && (
+          <div style={{ marginTop: 16 }}>
+            {!bbt.transfers?.length ? (
+              <div style={emptyStateStyle}>No hay transferencias registradas.</div>
+            ) : (
+              <div style={tableWrapStyle}>
+                <table style={tableStyle}>
+                  <thead>
+                    <tr style={theadRowStyle}>
+                      <th style={thStyle}>ID</th>
+                      <th style={thStyle}>Cerveza</th>
+                      <th style={thStyle}>Cliente</th>
+                      <th style={thStyle}>Proceso</th>
+                      <th style={thStyle}>Litros transferidos</th>
+                      <th style={thStyle}>Merma</th>
+                      <th style={thStyle}>Litros netos</th>
+                      <th style={thStyle}>Fecha</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {bbt.transfers.map((t: any) => (
+                      <tr key={t.id}>
+                        <td style={tdStyle}>{t.id}</td>
+                        <td style={tdStyle}>{t.production?.beerName ?? '-'}</td>
+                        <td style={tdStyle}>{t.production?.client?.name ?? '-'}</td>
+                        <td style={tdStyle}>{t.processType}</td>
+                        <td style={tdStyle}>{formatLiters(t.litersTransferred)}</td>
+                        <td style={tdStyle}>{formatLiters(t.lossLiters)}</td>
+                        <td style={tdStyle}>{formatLiters(t.litersReceivedInBbt)}</td>
+                        <td style={tdStyle}>{formatDate(t.createdAt)}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
           </div>
         )}
       </div>
 
+      {/* Historial de estados — acordeón */}
       <div style={sectionCardStyle}>
-        <div style={sectionHeaderStyle}>
-          <div>
-            <h2 style={sectionTitleStyle}>Historial de estados del BBT</h2>
-            <p style={sectionSubtitleStyle}>
-              Registro de cambios operativos del tanque.
-            </p>
-          </div>
-        </div>
+        <button
+          onClick={() => setShowStatusHistory((v) => !v)}
+          style={accordionButtonStyle}
+        >
+          <span>🔄 Historial de estados del BBT</span>
+          <span style={accordionBadgeStyle}>{bbt.statusHistory?.length ?? 0}</span>
+          <span style={accordionChevronStyle}>{showStatusHistory ? '▲' : '▼'}</span>
+        </button>
 
-        {!bbt.statusHistory?.length ? (
-          <div style={emptyStateStyle}>No hay historial de estados registrado.</div>
-        ) : (
-          <div style={tableWrapStyle}>
-            <table style={tableStyle}>
-              <thead>
-                <tr style={theadRowStyle}>
-                  <th style={thStyle}>De</th>
-                  <th style={thStyle}>A</th>
-                  <th style={thStyle}>Usuario</th>
-                  <th style={thStyle}>Nota</th>
-                  <th style={thStyle}>Fecha</th>
-                </tr>
-              </thead>
-              <tbody>
-                {bbt.statusHistory.map((h: any) => (
-                  <tr key={h.id}>
-                    <td style={tdStyle}>{h.fromStatus || '-'}</td>
-                    <td style={tdStyle}>{h.toStatus || '-'}</td>
-                    <td style={tdStyle}>{h.changedBy || '-'}</td>
-                    <td style={tdStyle}>{h.note || '-'}</td>
-                    <td style={tdStyle}>{formatDate(h.createdAt)}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
+        {showStatusHistory && (
+          <div style={{ marginTop: 16 }}>
+            {!bbt.statusHistory?.length ? (
+              <div style={emptyStateStyle}>No hay historial de estados registrado.</div>
+            ) : (
+              <div style={tableWrapStyle}>
+                <table style={tableStyle}>
+                  <thead>
+                    <tr style={theadRowStyle}>
+                      <th style={thStyle}>De</th>
+                      <th style={thStyle}>A</th>
+                      <th style={thStyle}>Usuario</th>
+                      <th style={thStyle}>Nota</th>
+                      <th style={thStyle}>Fecha</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {bbt.statusHistory.map((h: any) => (
+                      <tr key={h.id}>
+                        <td style={tdStyle}>{h.fromStatus || '-'}</td>
+                        <td style={tdStyle}>{h.toStatus || '-'}</td>
+                        <td style={tdStyle}>{h.changedBy || '-'}</td>
+                        <td style={tdStyle}>{h.note || '-'}</td>
+                        <td style={tdStyle}>{formatDate(h.createdAt)}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
           </div>
         )}
       </div>
 
+      {/* Movimientos del BBT — acordeón */}
       <div style={sectionCardStyle}>
-        <div style={sectionHeaderStyle}>
-          <div>
-            <h2 style={sectionTitleStyle}>Movimientos del BBT</h2>
-            <p style={sectionSubtitleStyle}>
-              Auditoría completa de ingresos, salidas y cambios relacionados con el tanque.
-            </p>
-          </div>
-        </div>
+        <button
+          onClick={() => setShowMovements((v) => !v)}
+          style={accordionButtonStyle}
+        >
+          <span>📊 Historial de movimientos</span>
+          <span style={accordionBadgeStyle}>{bbt.movements?.length ?? 0}</span>
+          <span style={accordionChevronStyle}>{showMovements ? '▲' : '▼'}</span>
+        </button>
 
-        {!bbt.movements?.length ? (
-          <div style={emptyStateStyle}>No hay movimientos registrados.</div>
-        ) : (
-          <div style={tableWrapStyle}>
-            <table style={tableStyle}>
-              <thead>
-                <tr style={theadRowStyle}>
-                  <th style={thStyle}>Tipo</th>
-                  <th style={thStyle}>Entrada (L)</th>
-                  <th style={thStyle}>Salida (L)</th>
-                  <th style={thStyle}>Merma (L)</th>
-                  <th style={thStyle}>Volumen resultante</th>
-                  <th style={thStyle}>Usuario</th>
-                  <th style={thStyle}>Nota</th>
-                  <th style={thStyle}>Fecha</th>
-                </tr>
-              </thead>
-              <tbody>
-                {bbt.movements.map((m: any) => (
-                  <tr key={m.id}>
-                    <td style={tdStyle}>{getMovementLabel(m.movementType)}</td>
-                    <td style={tdStyle}>{formatLiters(m.litersIn)}</td>
-                    <td style={tdStyle}>{formatLiters(m.litersOut)}</td>
-                    <td style={tdStyle}>{formatLiters(m.lossLiters)}</td>
-                    <td style={tdStyle}>{formatLiters(m.resultingVolumeLiters)}</td>
-                    <td style={tdStyle}>{m.changedBy || '-'}</td>
-                    <td style={tdStyle}>{m.note || '-'}</td>
-                    <td style={tdStyle}>{formatDate(m.createdAt)}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
+        {showMovements && (
+          <div style={{ marginTop: 16 }}>
+            {!bbt.movements?.length ? (
+              <div style={emptyStateStyle}>No hay movimientos registrados.</div>
+            ) : (
+              <div style={tableWrapStyle}>
+                <table style={tableStyle}>
+                  <thead>
+                    <tr style={theadRowStyle}>
+                      <th style={thStyle}>Tipo</th>
+                      <th style={thStyle}>Entrada (L)</th>
+                      <th style={thStyle}>Salida (L)</th>
+                      <th style={thStyle}>Merma (L)</th>
+                      <th style={thStyle}>Vol. resultante</th>
+                      <th style={thStyle}>Usuario</th>
+                      <th style={thStyle}>Nota</th>
+                      <th style={thStyle}>Fecha</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {bbt.movements.map((m: any) => (
+                      <tr key={m.id}>
+                        <td style={tdStyle}>{getMovementLabel(m.movementType)}</td>
+                        <td style={tdStyle}>{formatLiters(m.litersIn)}</td>
+                        <td style={tdStyle}>{formatLiters(m.litersOut)}</td>
+                        <td style={tdStyle}>{formatLiters(m.lossLiters)}</td>
+                        <td style={tdStyle}>{formatLiters(m.resultingVolumeLiters)}</td>
+                        <td style={tdStyle}>{m.changedBy || '-'}</td>
+                        <td style={tdStyle}>{m.note || '-'}</td>
+                        <td style={tdStyle}>{formatDate(m.createdAt)}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
           </div>
         )}
       </div>
@@ -1086,4 +1197,36 @@ const tdStyle: CSSProperties = {
   fontSize: 14,
   color: '#0f172a',
   verticalAlign: 'top',
+};
+
+const accordionButtonStyle: CSSProperties = {
+  width: '100%',
+  display: 'flex',
+  alignItems: 'center',
+  gap: 10,
+  background: '#f8fafc',
+  border: '1px solid #e2e8f0',
+  borderRadius: 14,
+  padding: '14px 18px',
+  fontWeight: 800,
+  fontSize: 15,
+  color: '#0f172a',
+  cursor: 'pointer',
+  textAlign: 'left',
+};
+
+const accordionBadgeStyle: CSSProperties = {
+  marginLeft: 'auto',
+  background: '#e2e8f0',
+  color: '#475569',
+  borderRadius: 999,
+  padding: '2px 10px',
+  fontSize: 13,
+  fontWeight: 700,
+};
+
+const accordionChevronStyle: CSSProperties = {
+  fontSize: 12,
+  color: '#94a3b8',
+  marginLeft: 6,
 };

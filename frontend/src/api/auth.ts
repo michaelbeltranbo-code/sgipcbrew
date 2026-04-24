@@ -61,10 +61,11 @@ export async function loginUser(username: string, password: string) {
   });
 }
 
-export async function registerUser(payload: RegisterPayload) {
+export async function registerUser(payload: RegisterPayload, token: string) {
   return request<{ message: string; user: any }>("/auth/register", {
     method: "POST",
     body: JSON.stringify(payload),
+    headers: { Authorization: `Bearer ${token}` },
   });
 }
 

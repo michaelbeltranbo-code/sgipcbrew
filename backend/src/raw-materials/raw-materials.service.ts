@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { MoreThan, Repository } from 'typeorm';
 import { RawMaterial } from './raw-material.entity';
 
 @Injectable()
@@ -11,10 +11,11 @@ export class RawMaterialsService {
   ) {}
 
   findAll() {
-  return this.rawMaterialRepo.find({
-  relations: { client: true },
-  order: { createdAt: "DESC" },
-});
+    return this.rawMaterialRepo.find({
+      where: { quantity: MoreThan(0) },
+      relations: { client: true },
+      order: { createdAt: 'DESC' },
+    });
   }
 
   create(data: Partial<RawMaterial>) {

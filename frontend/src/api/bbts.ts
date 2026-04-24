@@ -123,6 +123,7 @@ export async function kegDownFromBbt(
     kegs60: number;
     kegs50: number;
     kegs30: number;
+    partialLiters?: number;
     lossLiters: number;
     note?: string;
   },

@@ -648,21 +648,22 @@ async kegDown(dto: CreateKegDownDto, user: any) {
     const kegs60 = Number(dto.kegs60 ?? 0);
     const kegs50 = Number(dto.kegs50 ?? 0);
     const kegs30 = Number(dto.kegs30 ?? 0);
+    const partialLiters = Number(dto.partialLiters ?? 0);
     const lossLiters = Number(dto.lossLiters ?? 0);
 
-    const litersInKegs = kegs60 * 60 + kegs50 * 50 + kegs30 * 30;
+    const litersInKegs = kegs60 * 60 + kegs50 * 50 + kegs30 * 30 + partialLiters;
     const totalOutLiters = litersInKegs + lossLiters;
     const availableLiters = Number(fermenter.currentVolumeLiters ?? 0);
 
     if (litersInKegs <= 0) {
       throw new BadRequestException(
-        'Debes registrar al menos un barril con cerveza',
+        'Debes registrar al menos un barril o cantidad de cerveza',
       );
     }
 
     if (totalOutLiters > availableLiters) {
       throw new BadRequestException(
-        'No hay suficientes litros en el fermentador',
+        `No hay suficientes litros en el fermentador. Disponibles: ${availableLiters} L, solicitados: ${totalOutLiters} L`,
       );
     }
 
@@ -678,6 +679,7 @@ async kegDown(dto: CreateKegDownDto, user: any) {
       kegs60,
       kegs50,
       kegs30,
+      partialLiters,
       totalKegLiters: litersInKegs,
       lossLiters,
       note: dto.note ?? null,
@@ -818,17 +820,34 @@ async createKegBottlingOrder(dto: CreateKegBottlingOrderDto, user: any) {
       throw new NotFoundException('Registro de barriles no encontrado');
     }
 
-    if (dto.kegSizeLiters === 60 && Number(record.kegs60 ?? 0) <= 0) {
+    const quantity = dto.kegQuantity ?? 1;
+
+    const available60 = Number(record.kegs60 ?? 0);
+    const available50 = Number(record.kegs50 ?? 0);
+    const available30 = Number(record.kegs30 ?? 0);
+
+    if (dto.kegSizeLiters === 60 && available60 <= 0) {
       throw new BadRequestException('No hay barriles de 60 L disponibles');
     }
+    if (dto.kegSizeLiters === 60 && quantity > available60) {
+      throw new BadRequestException(`Solo hay ${available60} barril(es) de 60 L disponibles`);
+    }
 
-    if (dto.kegSizeLiters === 50 && Number(record.kegs50 ?? 0) <= 0) {
+    if (dto.kegSizeLiters === 50 && available50 <= 0) {
       throw new BadRequestException('No hay barriles de 50 L disponibles');
     }
+    if (dto.kegSizeLiters === 50 && quantity > available50) {
+      throw new BadRequestException(`Solo hay ${available50} barril(es) de 50 L disponibles`);
+    }
 
-    if (dto.kegSizeLiters === 30 && Number(record.kegs30 ?? 0) <= 0) {
+    if (dto.kegSizeLiters === 30 && available30 <= 0) {
       throw new BadRequestException('No hay barriles de 30 L disponibles');
     }
+    if (dto.kegSizeLiters === 30 && quantity > available30) {
+      throw new BadRequestException(`Solo hay ${available30} barril(es) de 30 L disponibles`);
+    }
+
+    const totalLiters = dto.kegSizeLiters * quantity;
 
     const existingOpenOrder = await bottlingRepo.findOne({
       where: {
@@ -859,8 +878,8 @@ async createKegBottlingOrder(dto: CreateKegBottlingOrderDto, user: any) {
     order.sourceFermenterId = record.fermenterId;
     order.sourceColdRoomKegId = record.id;
     order.sourceKegSizeLiters = dto.kegSizeLiters;
-    order.requestedLiters = dto.kegSizeLiters;
-    order.remainingLiters = dto.kegSizeLiters;
+    order.requestedLiters = totalLiters;
+    order.remainingLiters = totalLiters;
     order.status = 'PENDIENTE';
     order.startedAt = null;
     order.startedByUserId = null;
@@ -1063,11 +1082,14 @@ async finishBottling(dto: FinishBottlingDto, user: any) {
         throw new NotFoundException('Registro de barril no encontrado');
       }
 
-      const sourceKegLiters = Number(order.sourceKegSizeLiters ?? 0);
+      // Use sourceKegSizeLiters for keg-type logic (always 60/50/30)
+      // Use remainingLiters for the expected total (accounts for quantity > 1)
+      const kegSizeLiters = Number(order.sourceKegSizeLiters ?? 0);
+      const expectedTotalLiters = Number(order.remainingLiters ?? kegSizeLiters);
 
-      if (totalProcessedLiters !== sourceKegLiters) {
+      if (Math.abs(totalProcessedLiters - expectedTotalLiters) > 0.05) {
         throw new BadRequestException(
-          'Para embotellar desde barril debes vaciar completamente el barril seleccionado en una sola operación',
+          `Para embotellar desde barril debes vaciar completamente el barril seleccionado en una sola operación. Esperado: ${expectedTotalLiters} L, registrado: ${totalProcessedLiters} L`,
         );
       }
 
@@ -1087,23 +1109,35 @@ async finishBottling(dto: FinishBottlingDto, user: any) {
       await bottlingRepo.save(order);
       await this.createPackagedStockFromFinishedOrder(manager, order, user);
 
-      const totalKegLiters = Number(kegRecord.totalKegLiters ?? 0);
+      // Compute how many kegs of this size were consumed
+      const kegQuantity =
+        kegSizeLiters > 0 ? Math.round(expectedTotalLiters / kegSizeLiters) : 1;
+
+      const prevTotalKegLiters = Number(kegRecord.totalKegLiters ?? 0);
+      const newTotalKegLiters = Math.max(
+        0,
+        Number((prevTotalKegLiters - expectedTotalLiters).toFixed(2)),
+      );
 
       const updatePayload: any = {
         id: kegRecord.id,
-        totalKegLiters: Number((totalKegLiters - sourceKegLiters).toFixed(2)),
+        totalKegLiters: newTotalKegLiters,
       };
 
-      if (sourceKegLiters === 60) {
-        updatePayload.kegs60 = Math.max(0, Number(kegRecord.kegs60 ?? 0) - 1);
+      if (kegSizeLiters === 60) {
+        updatePayload.kegs60 = Math.max(0, Number(kegRecord.kegs60 ?? 0) - kegQuantity);
+      } else if (kegSizeLiters === 50) {
+        updatePayload.kegs50 = Math.max(0, Number(kegRecord.kegs50 ?? 0) - kegQuantity);
+      } else if (kegSizeLiters === 30) {
+        updatePayload.kegs30 = Math.max(0, Number(kegRecord.kegs30 ?? 0) - kegQuantity);
       }
 
-      if (sourceKegLiters === 50) {
-        updatePayload.kegs50 = Math.max(0, Number(kegRecord.kegs50 ?? 0) - 1);
-      }
-
-      if (sourceKegLiters === 30) {
-        updatePayload.kegs30 = Math.max(0, Number(kegRecord.kegs30 ?? 0) - 1);
+      // If the record is completely drained, zero out partialLiters as well
+      const remaining60 = updatePayload.kegs60 ?? Number(kegRecord.kegs60 ?? 0);
+      const remaining50 = updatePayload.kegs50 ?? Number(kegRecord.kegs50 ?? 0);
+      const remaining30 = updatePayload.kegs30 ?? Number(kegRecord.kegs30 ?? 0);
+      if (remaining60 <= 0 && remaining50 <= 0 && remaining30 <= 0 && newTotalKegLiters <= 0) {
+        updatePayload.partialLiters = 0;
       }
 
       await kegRepo.save(updatePayload);
@@ -1426,7 +1460,15 @@ async listColdRoomInventory(
     order: { storedAt: 'DESC' },
   });
 
-  const kegInventory = kegRows.map((item) => ({
+  const kegInventory = kegRows
+    .filter(
+      (item) =>
+        Number(item.kegs60 ?? 0) > 0 ||
+        Number(item.kegs50 ?? 0) > 0 ||
+        Number(item.kegs30 ?? 0) > 0 ||
+        Number(item.partialLiters ?? 0) > 0,
+    )
+    .map((item) => ({
     id: item.id,
     inventoryType: 'BARRIL',
     sourceType: item.sourceType ?? 'TRANSFER',
@@ -1436,6 +1478,7 @@ async listColdRoomInventory(
     kegs60: Number(item.kegs60 ?? 0),
     kegs50: Number(item.kegs50 ?? 0),
     kegs30: Number(item.kegs30 ?? 0),
+    partialLiters: Number(item.partialLiters ?? 0),
     totalKegLiters: Number(item.totalKegLiters ?? 0),
     units330: 0,
     units269: 0,
@@ -1443,6 +1486,8 @@ async listColdRoomInventory(
     litersFrom269: 0,
     totalBottleLiters: 0,
     registeredAt: item.storedAt,
+    storedByName: item.storedByName ?? null,
+    fermenterId: item.fermenterId ?? null,
   }));
 
   const bottleInventory = packagedRows

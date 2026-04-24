@@ -16,6 +16,17 @@ export type ProductionStatus =
   | "transferring"
   | "finished";
 
+export function productionStatusLabel(status?: string | null): string {
+  switch (status) {
+    case "brewed":              return "Elaborada";
+    case "waiting_for_fermenter": return "En espera de fermentador";
+    case "transferred_to_fermenter": return "En fermentación";
+    case "transferring":        return "En trasiego";
+    case "finished":            return "Finalizada";
+    default:                    return status ?? "-";
+  }
+}
+
 export type ProductionSummary = {
   id: number;
   beerName: string;
@@ -119,6 +130,7 @@ export type CreateKegDownPayload = {
   kegs60: number;
   kegs50: number;
   kegs30: number;
+  partialLiters?: number;
   lossLiters: number;
   note?: string;
 };
@@ -130,6 +142,7 @@ export type CreateBottlingOrderPayload = {
 export type CreateKegBottlingOrderPayload = {
   coldRoomKegId: number;
   kegSizeLiters: 60 | 50 | 30;
+  kegQuantity?: number;
   note?: string;
 };
 
@@ -155,6 +168,7 @@ export type ColdRoomInventoryItem = {
   kegs60: number;
   kegs50: number;
   kegs30: number;
+  partialLiters: number;
   totalKegLiters: number;
   units330: number;
   units269: number;
@@ -162,6 +176,8 @@ export type ColdRoomInventoryItem = {
   litersFrom269: number;
   totalBottleLiters: number;
   registeredAt?: string | null;
+  storedByName?: string | null;
+  fermenterId?: number | null;
 };
 
 export type UpdateFermenterStatusPayload = {

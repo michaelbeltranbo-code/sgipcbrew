@@ -41,7 +41,7 @@ export class FermenterReading {
   purges: number | null;
 
   @Column({ type: 'varchar', length: 20, nullable: true })
-  purgeUnit: 'kg' | 'l' | null;
+  purgeUnit: 'kg'|'l' | null;
 
   @Column({ type: 'boolean', default: false })
   dryHop: boolean;

@@ -20,7 +20,7 @@ export class ProductionMalt {
   rawMaterial: RawMaterial;
 
   // kg usados
-  @Column("decimal", { precision: 12, scale: 3 })
+  @Column("decimal", { precision: 12, scale: 1 })
   quantityKg: number;
 
   // lote que reporta operario (trazabilidad)

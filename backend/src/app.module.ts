@@ -1,6 +1,6 @@
 import { Module } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
-import { ConfigModule } from '@nestjs/config';
+
 import { RawMaterialsModule } from './raw-materials/raw-materials.module';
 import { ProductionModule } from './production/production.module';
 import { ClientsModule } from './clients/clients.module';
@@ -9,6 +9,7 @@ import { AuthModule } from './auth/auth.module';
 import { UsersModule } from './users/users.module';
 import { BbtsModule } from './bbts/bbts.module';
 import { ReportsModule } from './reports/reports.module';
+import { ConfigModule, ConfigService } from '@nestjs/config';
 
 @Module({
   imports: [
@@ -16,17 +17,21 @@ import { ReportsModule } from './reports/reports.module';
       isGlobal: true,
       
     }),
-    TypeOrmModule.forRoot({
-      type: 'postgres',
-      host: process.env.DB_HOST,
-      port: Number(process.env.DB_PORT),
-      username: process.env.DB_USER,
-      password: process.env.DB_PASSWORD,
-      database: process.env.DB_NAME,
-      autoLoadEntities: true,
-      synchronize: false,
-      
-    }),
+   
+TypeOrmModule.forRootAsync({
+  imports: [ConfigModule],
+  inject: [ConfigService],
+  useFactory: (config: ConfigService) => ({
+    type: 'postgres',
+    host: config.get<string>('DB_HOST'),
+    port: config.get<number>('DB_PORT'),
+    username: config.get<string>('DB_USER'),
+    password: config.get<string>('DB_PASSWORD'),
+    database: config.get<string>('DB_NAME'),
+    autoLoadEntities: true,
+    synchronize: false,
+  }),
+}),
     RawMaterialsModule,
     ProductionModule,
     ClientsModule,

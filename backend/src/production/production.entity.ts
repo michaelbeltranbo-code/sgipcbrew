@@ -51,7 +51,7 @@ export class Production {
   @CreateDateColumn()
   startedAt: Date;
 
-  @Column('decimal', { precision: 10, scale: 2, nullable: true })
+  @Column('decimal', { precision: 10, scale: 1, nullable: true })
   volumeLiters: number | null;
 
   @Column({

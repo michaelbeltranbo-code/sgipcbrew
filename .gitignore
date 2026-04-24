@@ -4,5 +4,10 @@ node_modules/
 # Build
 dist/
 
-# Variables de entorno
+# Variables de entorno (nunca subir .env con datos reales)
 .env
+.env.local
+.env.production
+
+# Docker
+*.log

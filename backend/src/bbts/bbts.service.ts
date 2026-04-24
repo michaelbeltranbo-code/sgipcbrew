@@ -88,7 +88,11 @@ export class BbtsService {
     const bbt = await this.bbtRepo.findOne({
       where: { id },
       relations: {
-        transfers: true,
+        transfers: {
+          production: {
+            client: true,
+          },
+        },
         statusHistory: true,
         movements: true,
       },
@@ -547,21 +551,25 @@ async kegDownFromBbt(id: number, dto: CreateBbtKegDownDto, user: any) {
       throw new BadRequestException('El BBT no está listo para empaque');
     }
 
+    const partialLiters = Number(dto.partialLiters ?? 0);
     const litersInKegs =
       Number(dto.kegs60 ?? 0) * 60 +
       Number(dto.kegs50 ?? 0) * 50 +
-      Number(dto.kegs30 ?? 0) * 30;
+      Number(dto.kegs30 ?? 0) * 30 +
+      partialLiters;
 
     const lossLiters = Number(dto.lossLiters ?? 0);
     const totalOutput = Number((litersInKegs + lossLiters).toFixed(2));
     const available = Number(bbt.currentVolumeLiters ?? 0);
 
     if (totalOutput <= 0) {
-      throw new BadRequestException('Debes registrar al menos barriles o merma');
+      throw new BadRequestException('Debes registrar al menos barriles, litros parciales o merma');
     }
 
     if (totalOutput > available) {
-      throw new BadRequestException('No hay litros suficientes en el BBT');
+      throw new BadRequestException(
+        `No hay litros suficientes en el BBT. Disponibles: ${available} L, solicitados: ${totalOutput} L`,
+      );
     }
 
     const record = kegRepo.create({
@@ -578,6 +586,7 @@ async kegDownFromBbt(id: number, dto: CreateBbtKegDownDto, user: any) {
       kegs60: Number(dto.kegs60 ?? 0),
       kegs50: Number(dto.kegs50 ?? 0),
       kegs30: Number(dto.kegs30 ?? 0),
+      partialLiters,
       totalKegLiters: litersInKegs,
       lossLiters,
       note: dto.note ?? null,

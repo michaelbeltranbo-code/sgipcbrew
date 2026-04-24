@@ -223,9 +223,29 @@ export default function ProductionPage() {
 
   return (
     <div style={{ padding: 16, maxWidth: 1200, margin: "0 auto" }}>
-      <h1 style={{ margin: 0, fontSize: 28, fontWeight: 900 }}>
-        Producción / Cocción (Brew Batch)
-      </h1>
+      <div style={{ display: "flex", alignItems: "center", gap: 16, marginBottom: 8 }}>
+        <h1 style={{ margin: 0, fontSize: 28, fontWeight: 900, flex: 1 }}>
+          Producción / Cocción (Brew Batch)
+        </h1>
+        <button
+          onClick={() => navigate("/plant")}
+          type="button"
+          style={{
+            border: "1px solid #cbd5e1",
+            borderRadius: 10,
+            padding: "8px 16px",
+            background: "white",
+            cursor: "pointer",
+            fontWeight: 700,
+            fontSize: 14,
+            display: "flex",
+            alignItems: "center",
+            gap: 6,
+          }}
+        >
+          ← Volver al mapa
+        </button>
+      </div>
 
       {msg && (
         <div

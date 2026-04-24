@@ -20,6 +20,12 @@ export class CreateBbtKegDownDto {
   @Type(() => Number)
   @IsNumber()
   @Min(0)
+  @IsOptional()
+  partialLiters?: number;
+
+  @Type(() => Number)
+  @IsNumber()
+  @Min(0)
   lossLiters: number;
 
   @IsOptional()

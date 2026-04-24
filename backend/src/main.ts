@@ -5,13 +5,12 @@ import { AppModule } from './app.module';
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
 
-  const corsOrigins = (process.env.CORS_ORIGIN || '')
-    .split(',')
-    .map((v) => v.trim())
-    .filter(Boolean);
+  const allowedOrigins = process.env.CORS_ORIGIN
+    ? process.env.CORS_ORIGIN.split(',').map((o) => o.trim())
+    : ['http://localhost:5173'];
 
   app.enableCors({
-    origin: corsOrigins.length ? corsOrigins : true,
+    origin: allowedOrigins,
     credentials: true,
   });
 
@@ -22,7 +21,9 @@ async function bootstrap() {
     }),
   );
 
-  const port = Number(process.env.PORT) || 3000;
-  await app.listen(port, '0.0.0.0');
+  const port = Number(process.env.PORT ?? 3000);
+  await app.listen(port);
+  console.log(`Backend corriendo en puerto ${port}`);
 }
 bootstrap();
+

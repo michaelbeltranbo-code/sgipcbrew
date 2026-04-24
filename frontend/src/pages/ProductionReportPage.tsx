@@ -12,10 +12,10 @@ function formatDate(value?: string | null) {
   return date.toLocaleString();
 }
 
-function formatNumber(value: any, decimals = 2) {
+function formatNumber(value: any) {
   const num = Number(value ?? 0);
   if (Number.isNaN(num)) return "-";
-  return num.toFixed(decimals);
+  return num % 1 === 0 ? String(num) : num.toFixed(1);
 }
 
 function formatLiters(value: any) {

@@ -1,6 +1,6 @@
 import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { DataSource, Repository } from 'typeorm';
+import { DataSource, MoreThan, Repository } from 'typeorm';
 import { RawMaterial } from '../raw-materials/raw-material.entity';
 import { Production } from './production.entity';
 import { ProductionMaterial } from './production-material.entity';
@@ -342,6 +342,7 @@ export class ProductionService {
 
   async listRawMaterials() {
     return this.rawMaterialRepo.find({
+      where: { quantity: MoreThan(0) },
       order: { name: 'ASC' },
       relations: {
         client: true,

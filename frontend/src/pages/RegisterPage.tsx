@@ -1,11 +1,13 @@
 import { useState } from "react";
 import { registerUser } from "../api/auth";
 import { Link, useNavigate } from "react-router-dom";
+import { useAuth } from "../auth/AuthContext";
 
 type RoleValue = "operador" | "supervisor" | "admin";
 
 export default function RegisterPage() {
   const navigate = useNavigate();
+  const { token } = useAuth();
   const [fullName, setFullName] = useState("");
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
@@ -25,10 +27,10 @@ export default function RegisterPage() {
         password,
         role,
         isActive: true,
-      });
+      }, token);
 
       setMsg("Usuario registrado correctamente");
-      setTimeout(() => navigate("/login"), 1200);
+      setTimeout(() => navigate("/plant"), 1200);
     } catch (err: any) {
       setMsg(err.message || "No se pudo registrar el usuario");
     } finally {
@@ -100,8 +102,8 @@ export default function RegisterPage() {
         )}
 
         <div className="mt-6 text-center text-sm">
-          <Link to="/login" className="text-blue-600 font-semibold">
-            Volver al login
+          <Link to="/plant" className="text-blue-600 font-semibold">
+            Volver al inicio
           </Link>
         </div>
       </div>

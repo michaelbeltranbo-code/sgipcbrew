@@ -2,6 +2,7 @@ import { useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { listProductionReports } from "../api/reports";
+import { productionStatusLabel } from "../api/fermenters";
 
 export default function ReportsPage() {
   const navigate = useNavigate();
@@ -120,7 +121,7 @@ export default function ReportsPage() {
                   <td style={tdStyle}>{item.beerName}</td>
                   <td style={tdStyle}>{item.clientName ?? "-"}</td>
                   <td style={tdStyle}>{item.producedAt ?? "-"}</td>
-                  <td style={tdStyle}>{item.status ?? "-"}</td>
+                  <td style={tdStyle}>{productionStatusLabel(item.status)}</td>
                   <td style={tdStyle}>
                     <button
                       style={primaryBtn}

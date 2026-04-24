@@ -223,20 +223,21 @@ export default function PlantMap() {
             onClick={() => nav("/cold-room-outputs")}
             style={{
               position: "absolute",
-              left: "23%",
+              left: "15%",
               bottom: "58%",
-              transform: "translateX(-50%)",
+              width: "16%",
               background: "#086d2d",
               color: "#ffffff",
               border: "none",
               borderRadius: "14px",
-              padding: "10px 18px",
-              fontSize: "16px",
+              padding: "1% 0",
+              fontSize: "clamp(9px, 1.1vw, 15px)",
               fontWeight: 700,
               cursor: "pointer",
               zIndex: 80,
-              //boxShadow: "0 4px 10px rgba(0,0,0,0.25)",
-              minWidth: "190px",
+              whiteSpace: "nowrap",
+              overflow: "hidden",
+              textOverflow: "ellipsis",
             }}
           >
             Salidas cuarto frío

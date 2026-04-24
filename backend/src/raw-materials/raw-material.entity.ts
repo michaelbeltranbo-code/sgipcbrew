@@ -30,7 +30,7 @@ export class RawMaterial {
   @Column()
   name: string;
 
-  @Column("decimal", { precision: 10, scale: 2 })
+  @Column("decimal", { precision: 10, scale: 1 })
   quantity: number;
 
   @Column()

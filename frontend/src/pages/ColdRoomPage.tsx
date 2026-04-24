@@ -20,6 +20,7 @@ export default function ColdRoomPage() {
     kegs60: "",
     kegs50: "",
     kegs30: "",
+    partialLiters: "",
     lossLiters: "",
     note: "",
   });
@@ -49,23 +50,13 @@ export default function ColdRoomPage() {
   const saveM = useMutation({
     mutationFn: kegDown,
     onSuccess: async () => {
-      setForm({
-        kegs60: "",
-        kegs50: "",
-        kegs30: "",
-        lossLiters: "",
-        note: "",
-      });
+      setForm({ kegs60: "", kegs50: "", kegs30: "", partialLiters: "", lossLiters: "", note: "" });
       await qc.invalidateQueries({ queryKey: ["cold-room-kegs"] });
       await qc.invalidateQueries({ queryKey: ["fermenter", fermenterId] });
       alert("Barriles guardados en cuarto frío");
     },
     onError: (err: any) => {
-      alert(
-        err?.response?.data?.message ||
-          err?.message ||
-          "Error guardando barriles",
-      );
+      alert(err?.response?.data?.message || err?.message || "Error guardando barriles");
     },
   });
 
@@ -100,7 +91,8 @@ export default function ColdRoomPage() {
     return (
       Number(form.kegs60 || 0) * 60 +
       Number(form.kegs50 || 0) * 50 +
-      Number(form.kegs30 || 0) * 30
+      Number(form.kegs30 || 0) * 30 +
+      Number(form.partialLiters || 0)
     );
   }, [form]);
 
@@ -200,6 +192,30 @@ export default function ColdRoomPage() {
               />
             </div>
 
+            <div style={{
+              background: "#faf5ff",
+              border: "1px dashed #c4b5fd",
+              borderRadius: 10,
+              padding: 12,
+            }}>
+              <label style={{ ...labelStyle, color: "#6d28d9" }}>
+                Barril parcial — cantidad exacta (L)
+              </label>
+              <p style={{ margin: "0 0 8px", fontSize: 13, color: "#7c3aed" }}>
+                Usa este campo si queda cerveza que no alcanza para un barril completo.
+                Ej: quedan 18 L → escribe 18.
+              </p>
+              <input
+                type="number"
+                min="0"
+                step="0.1"
+                placeholder="Ej: 18"
+                value={form.partialLiters}
+                onChange={(e) => setForm((p) => ({ ...p, partialLiters: e.target.value }))}
+                style={{ ...fieldStyle, borderColor: "#c4b5fd" }}
+              />
+            </div>
+
             <div>
               <label style={labelStyle}>Merma del proceso (litros perdidos)</label>
               <input
@@ -215,7 +231,7 @@ export default function ColdRoomPage() {
             <div>
               <label style={labelStyle}>Observaciones</label>
               <textarea
-                placeholder="Ejemplo: Se llenaron 2 barriles de 60 L y 1 barril de 30 L"
+                placeholder="Ejemplo: 2 barriles de 60 L + 1 barril parcial de 18 L"
                 value={form.note}
                 onChange={(e) => setForm((p) => ({ ...p, note: e.target.value }))}
                 style={{ ...fieldStyle, minHeight: 90, resize: "vertical" }}
@@ -224,9 +240,12 @@ export default function ColdRoomPage() {
 
             <div style={summaryBoxStyle}>
               <div><strong>Resumen automático</strong></div>
-              <div>Litros en barriles: {litersInKegs} L</div>
+              <div>Barriles completos: {Number(form.kegs60||0)*60 + Number(form.kegs50||0)*50 + Number(form.kegs30||0)*30} L</div>
+              {Number(form.partialLiters || 0) > 0 && (
+                <div>Barril parcial: <strong>{form.partialLiters} L</strong></div>
+              )}
               <div>Merma registrada: {Number(form.lossLiters || 0)} L</div>
-              <div>
+              <div style={{ marginTop: 6, fontWeight: 700 }}>
                 Total que saldrá del fermentador:{" "}
                 {litersInKegs + Number(form.lossLiters || 0)} L
               </div>
@@ -245,6 +264,7 @@ export default function ColdRoomPage() {
                   kegs60: Number(form.kegs60 || 0),
                   kegs50: Number(form.kegs50 || 0),
                   kegs30: Number(form.kegs30 || 0),
+                  partialLiters: Number(form.partialLiters || 0),
                   lossLiters: Number(form.lossLiters || 0),
                   note: form.note || undefined,
                 });
@@ -503,3 +523,4 @@ const blueButtonStyle: React.CSSProperties = {
   cursor: "pointer",
   fontWeight: 700,
 };
+

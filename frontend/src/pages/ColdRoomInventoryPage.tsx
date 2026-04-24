@@ -152,6 +152,7 @@ export default function ColdRoomInventoryPage() {
             <th style={thStyle}>Barriles 60</th>
             <th style={thStyle}>Barriles 50</th>
             <th style={thStyle}>Barriles 30</th>
+            <th style={thStyle}>Barril parcial</th>
             <th style={thStyle}>Litros barriles</th>
             <th style={thStyle}>Unid. 330</th>
             <th style={thStyle}>Unid. 269</th>
@@ -173,7 +174,25 @@ export default function ColdRoomInventoryPage() {
               <td style={tdStyle}>{item.kegs60}</td>
               <td style={tdStyle}>{item.kegs50}</td>
               <td style={tdStyle}>{item.kegs30}</td>
-              <td style={tdStyle}>{item.totalKegLiters}</td>
+              <td style={tdStyle}>
+                {Number(item.partialLiters ?? 0) > 0 ? (
+                  <span style={{
+                    background: "#faf5ff",
+                    border: "1px solid #c4b5fd",
+                    color: "#6d28d9",
+                    borderRadius: 8,
+                    padding: "3px 8px",
+                    fontWeight: 700,
+                    fontSize: 13,
+                    whiteSpace: "nowrap",
+                  }}>
+                    {Number(item.partialLiters).toFixed(1)} L parcial
+                  </span>
+                ) : (
+                  <span style={{ color: "#94a3b8" }}>—</span>
+                )}
+              </td>
+              <td style={tdStyle}>{Number(item.totalKegLiters).toFixed(1)}</td>
               <td style={tdStyle}>{item.units330}</td>
               <td style={tdStyle}>{item.units269}</td>
               <td style={tdStyle}>{item.litersFrom330}</td>

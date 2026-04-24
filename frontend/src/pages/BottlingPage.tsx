@@ -1,4 +1,5 @@
-import { CSSProperties, useEffect, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
+import type { CSSProperties } from "react";
 import { useSearchParams } from "react-router-dom";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
@@ -17,6 +18,17 @@ function formatLiters(value: any) {
   const n = Number(value ?? 0);
   if (Number.isNaN(n)) return "-";
   return `${n.toFixed(2)} L`;
+}
+
+function kegRecordLabel(item: any): string {
+  const id = `BBL-${String(item.id).padStart(3, "0")}`;
+  const client = item.clientName ? item.clientName : "Sin cliente";
+  const parts: string[] = [];
+  if (Number(item.kegs60 ?? 0) > 0) parts.push(`${item.kegs60}×60L`);
+  if (Number(item.kegs50 ?? 0) > 0) parts.push(`${item.kegs50}×50L`);
+  if (Number(item.kegs30 ?? 0) > 0) parts.push(`${item.kegs30}×30L`);
+  const stock = parts.length > 0 ? parts.join(" / ") : "sin barriles";
+  return `${item.beerName} — ${client} — ${id} (${stock})`;
 }
 
 function getSourceLabel(sourceType?: string) {
@@ -85,6 +97,7 @@ export default function BottlingPage() {
   const [kegOrderForm, setKegOrderForm] = useState({
     coldRoomKegId: "",
     kegSizeLiters: "",
+    kegQuantity: "1",
     note: "",
   });
 
@@ -130,6 +143,7 @@ export default function BottlingPage() {
       setKegOrderForm({
         coldRoomKegId: "",
         kegSizeLiters: "",
+        kegQuantity: "1",
         note: "",
       });
       await qc.invalidateQueries({ queryKey: ["bottling-orders"] });
@@ -428,7 +442,7 @@ export default function BottlingPage() {
               <option value="">Selecciona</option>
               {kegRecords.map((item: any) => (
                 <option key={item.id} value={item.id}>
-                  #{item.id} - {item.beerName} - 60L:{item.kegs60} / 50L:{item.kegs50} / 30L:{item.kegs30}
+                  {kegRecordLabel(item)}
                 </option>
               ))}
             </select>
@@ -437,20 +451,50 @@ export default function BottlingPage() {
           {selectedKegRecord && (
             <>
               <div style={fieldBlockStyle}>
-                <label style={labelStyle}>Barril a embotellar</label>
+                <label style={labelStyle}>Tamaño de barril</label>
                 <select
                   value={kegOrderForm.kegSizeLiters}
                   onChange={(e) =>
-                    setKegOrderForm((p) => ({ ...p, kegSizeLiters: e.target.value }))
+                    setKegOrderForm((p) => ({ ...p, kegSizeLiters: e.target.value, kegQuantity: "1" }))
                   }
                   style={fieldStyle}
                 >
                   <option value="">Selecciona tamaño</option>
-                  {Number(selectedKegRecord.kegs60 ?? 0) > 0 && <option value="60">Barril de 60 L</option>}
-                  {Number(selectedKegRecord.kegs50 ?? 0) > 0 && <option value="50">Barril de 50 L</option>}
-                  {Number(selectedKegRecord.kegs30 ?? 0) > 0 && <option value="30">Barril de 30 L</option>}
+                  {Number(selectedKegRecord.kegs60 ?? 0) > 0 && (
+                    <option value="60">Barril de 60 L (disponibles: {selectedKegRecord.kegs60})</option>
+                  )}
+                  {Number(selectedKegRecord.kegs50 ?? 0) > 0 && (
+                    <option value="50">Barril de 50 L (disponibles: {selectedKegRecord.kegs50})</option>
+                  )}
+                  {Number(selectedKegRecord.kegs30 ?? 0) > 0 && (
+                    <option value="30">Barril de 30 L (disponibles: {selectedKegRecord.kegs30})</option>
+                  )}
                 </select>
               </div>
+
+              {kegOrderForm.kegSizeLiters && (
+                <div style={fieldBlockStyle}>
+                  <label style={labelStyle}>
+                    Cantidad de barriles de {kegOrderForm.kegSizeLiters} L
+                  </label>
+                  <input
+                    type="number"
+                    min="1"
+                    max={
+                      kegOrderForm.kegSizeLiters === "60"
+                        ? selectedKegRecord.kegs60
+                        : kegOrderForm.kegSizeLiters === "50"
+                        ? selectedKegRecord.kegs50
+                        : selectedKegRecord.kegs30
+                    }
+                    value={kegOrderForm.kegQuantity}
+                    onChange={(e) =>
+                      setKegOrderForm((p) => ({ ...p, kegQuantity: e.target.value }))
+                    }
+                    style={fieldStyle}
+                  />
+                </div>
+              )}
 
               <div style={fieldBlockStyle}>
                 <label style={labelStyle}>Observaciones</label>
@@ -477,6 +521,38 @@ export default function BottlingPage() {
           </div>
         )}
 
+        {selectedKegRecord && kegOrderForm.kegSizeLiters && kegOrderForm.kegQuantity && (
+          <div style={{
+            display: "flex",
+            alignItems: "center",
+            gap: 16,
+            padding: "14px 18px",
+            borderRadius: 14,
+            background: "#eff6ff",
+            border: "1px solid #bfdbfe",
+            marginBottom: 16,
+            flexWrap: "wrap",
+          }}>
+            <div>
+              <div style={{ fontSize: 12, color: "#1e40af", fontWeight: 700, marginBottom: 4 }}>
+                Barriles seleccionados
+              </div>
+              <div style={{ fontSize: 22, fontWeight: 800, color: "#1e3a8a" }}>
+                {kegOrderForm.kegQuantity} × {kegOrderForm.kegSizeLiters} L
+              </div>
+            </div>
+            <div style={{ fontSize: 28, color: "#93c5fd", fontWeight: 300 }}>→</div>
+            <div>
+              <div style={{ fontSize: 12, color: "#1e40af", fontWeight: 700, marginBottom: 4 }}>
+                Total a embotellar
+              </div>
+              <div style={{ fontSize: 28, fontWeight: 900, color: "#1d4ed8" }}>
+                {(Number(kegOrderForm.kegQuantity) * Number(kegOrderForm.kegSizeLiters)).toFixed(0)} L
+              </div>
+            </div>
+          </div>
+        )}
+
         <div style={actionRowStyle}>
           <button
             style={secondaryButtonStyle}
@@ -485,10 +561,16 @@ export default function BottlingPage() {
                 alert("Debes seleccionar el registro y el tamaño del barril");
                 return;
               }
+              const qty = Number(kegOrderForm.kegQuantity) || 1;
+              if (qty < 1) {
+                alert("La cantidad debe ser al menos 1");
+                return;
+              }
 
               createKegOrderM.mutate({
                 coldRoomKegId: Number(kegOrderForm.coldRoomKegId),
                 kegSizeLiters: Number(kegOrderForm.kegSizeLiters) as 60 | 50 | 30,
+                kegQuantity: qty,
                 note: kegOrderForm.note || undefined,
               });
             }}

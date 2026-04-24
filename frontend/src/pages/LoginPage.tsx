@@ -112,18 +112,6 @@ export default function LoginPage() {
           </button>
 
           <Link
-            to="/register"
-            style={{
-              textAlign: "center",
-              color: "#2563eb",
-              textDecoration: "none",
-              fontWeight: 700,
-            }}
-          >
-            Crear usuario
-          </Link>
-
-          <Link
             to="/change-password"
             style={{
               textAlign: "center",

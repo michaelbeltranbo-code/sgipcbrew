@@ -13,7 +13,7 @@ export class ProductionMaterial {
   @ManyToOne(() => RawMaterial)
   rawMaterial: RawMaterial;
 
-  @Column('decimal', { precision: 10, scale: 2 })
+  @Column('decimal', { precision: 10, scale: 1 })
   quantityUsed: number;
   
 }

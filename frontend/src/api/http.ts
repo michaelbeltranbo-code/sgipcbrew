@@ -2,7 +2,7 @@ import axios from "axios";
 import { clearAuth, getToken } from "../auth/authStorage";
 
 export const http = axios.create({
-  baseURL: "http://localhost:3000",
+  baseURL: import.meta.env.VITE_API_URL ?? "http://localhost:3000",
 });
 
 http.interceptors.request.use((config) => {

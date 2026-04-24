@@ -54,6 +54,9 @@ export class ColdRoomKeg {
   @Column({ type: 'int', default: 0 })
   kegs30: number;
 
+  @Column('decimal', { precision: 10, scale: 2, default: 0, nullable: true })
+  partialLiters: number;
+
   @Column('decimal', { precision: 10, scale: 2, default: 0 })
   totalKegLiters: number;
 
