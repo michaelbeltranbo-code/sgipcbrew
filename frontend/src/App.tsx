@@ -6,7 +6,7 @@ import LoginPage from "./pages/LoginPage";
 import ProtectedRoute from "./components/ProtectedRoute";
 import FermenterHistory from "./pages/FermenterHistory";
 import RegisterPage from './pages/RegisterPage';
-import ForgotPasswordPage from './pages/ForgotPasswordPage';
+//import ForgotPasswordPage from './pages/ForgotPasswordPage';
 import AdminRoute from './components/AdminRoute';
 
 function HomePage() {
@@ -20,8 +20,8 @@ export default function App() {
         <Route path="/" element={<HomePage />} />
         <Route path="/login" element={<LoginPage />} />
         <Route path="/register" element={<AdminRoute><RegisterPage /></AdminRoute>} />
-        <Route path="/forgot-password" element={<ForgotPasswordPage />} />
-        <Route path="/" element={<ProtectedRoute><PlantMapPage /></ProtectedRoute> }/>
+        //<Route path="/forgot-password" element={<ForgotPasswordPage />} />
+        <Route path="/" element={<ProtectedRoute><PlantMap /></ProtectedRoute> }/>
       </Routes>
     </BrowserRouter>
   );
