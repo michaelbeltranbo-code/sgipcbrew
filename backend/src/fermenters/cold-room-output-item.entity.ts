@@ -22,7 +22,7 @@ export class ColdRoomOutputItem {
   @JoinColumn({ name: 'outputId' })
   output: ColdRoomOutput;
 
-  @Column({ type: 'varchar' })
+  @Column({ type: 'varchar', length: 20 })
   itemType: 'KEG' | 'PACKAGE';
 
   @Column({ type: 'int', nullable: true })

@@ -16,13 +16,13 @@ export class ColdRoomOutput {
   @Column({ type: 'date' })
   outputDate: string;
 
-  @Column({ type: 'varchar' })
-  destinationName: string;
+  @Column({ type: 'varchar', nullable: true })
+  destinationName: string | null;
 
-  @Column({ type: 'varchar' })
+  @Column({ type: 'varchar', length: 20 })
   destinationType: 'CLIENTE' | 'EVENTO' | 'BAR' | 'INTERNO';
 
-  @Column({ type: 'varchar', default: 'CONFIRMADA' })
+  @Column({ type: 'varchar', length: 20, default: 'CONFIRMADA' })
   status: 'CONFIRMADA' | 'ANULADA';
 
   @Column({ type: 'text', nullable: true })

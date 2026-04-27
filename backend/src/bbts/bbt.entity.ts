@@ -16,7 +16,7 @@ export class Bbt {
   @PrimaryGeneratedColumn()
   id: number;
 
-  @Column({ type: 'varchar', name: 'name' })
+  @Column({ type: 'varchar', length: 100, name: 'name' })
   name: string;
 
   @Column('decimal', {
@@ -28,8 +28,8 @@ export class Bbt {
   capacityLiters: number;
 
   @Column({
-    type: 'enum',
-    enum: BbtStatus,
+    type: 'varchar',
+    length: 50,
     name: 'status',
     default: BbtStatus.DISPONIBLE,
   })

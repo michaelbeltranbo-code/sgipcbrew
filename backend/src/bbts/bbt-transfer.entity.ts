@@ -29,8 +29,8 @@ export class BbtTransfer {
   production: Production;
 
   @Column({
-    type: 'enum',
-    enum: BbtProcessType,
+    type: 'varchar',
+    length: 50,
   })
   processType: BbtProcessType;
 

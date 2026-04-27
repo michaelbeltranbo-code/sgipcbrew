@@ -21,16 +21,10 @@ export class BbtStatusHistory {
   @Column({ type: 'int' })
   bbtId: number;
 
-  @Column({
-    type: 'enum',
-    enum: BbtStatus,
-  })
+  @Column({ type: 'varchar' })
   fromStatus: BbtStatus;
 
-  @Column({
-    type: 'enum',
-    enum: BbtStatus,
-  })
+  @Column({ type: 'varchar' })
   toStatus: BbtStatus;
 
   @Column({ type: 'varchar', nullable: true })

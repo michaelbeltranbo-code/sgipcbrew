@@ -23,7 +23,7 @@ export class ColdRoomPackagedStock {
   @Column({ type: 'int', nullable: true })
   sourceBottlingOrderId: number | null;
 
-  @Column({ type: 'varchar', default: 'FERMENTER' })
+  @Column({ type: 'varchar', length: 20, default: 'FERMENTER' })
   sourceType: 'FERMENTER' | 'KEG' | 'BBT';
 
   @Column({ type: 'int', default: 0 })
