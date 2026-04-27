@@ -20,7 +20,7 @@ export default function App() {
         <Route path="/" element={<HomePage />} />
         <Route path="/login" element={<LoginPage />} />
         <Route path="/register" element={<AdminRoute><RegisterPage /></AdminRoute>} />
-        //<Route path="/forgot-password" element={<ForgotPasswordPage />} />
+        {/*<Route path="/forgot-password" element={<ForgotPasswordPage />} /> */}
         <Route path="/" element={<ProtectedRoute><PlantMap /></ProtectedRoute> }/>
       </Routes>
     </BrowserRouter>
